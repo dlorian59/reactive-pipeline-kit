@@ -1,5 +1,7 @@
 # reactive-pipeline-kit 0.3.0 — руководство
 
+[Полный справочник API](reference.ru.md)
+
 [← Back to documentation and versions / Назад к документации и версиям](../index.md)
 
 [English](en.md) · [Русский](ru.md)

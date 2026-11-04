@@ -6,6 +6,8 @@
 <summary><picture><source media="(prefers-color-scheme: dark)" srcset="assets/lang-en-dark.svg"><img src="assets/lang-en-light.svg" width="42" height="26" alt="EN"></picture></summary>
 
 **Version:** [0.3.0 guide](docs/0.3.0/en.md) · [All versions](docs/index.md)<br>
+[Complete API reference](docs/0.3.0/reference.en.md)
+
 **Java:** [17](docs/0.3.0/java.en.md#java-17) · [21](docs/0.3.0/java.en.md#java-21) · [25](docs/0.3.0/java.en.md#java-25) · [27](docs/0.3.0/java.en.md#java-27)
 
 Typed Reactor pipelines for record enrichment and transformation. Each step has
@@ -75,6 +77,7 @@ There is no durable execution log, restart recovery, or distributed transaction.
 <summary><picture><source media="(prefers-color-scheme: dark)" srcset="assets/lang-ru-dark.svg"><img src="assets/lang-ru-light.svg" width="42" height="26" alt="RU"></picture></summary>
 
 **Версия:** [Руководство 0.3.0](docs/0.3.0/ru.md) · [Все версии](docs/index.md)<br>
+[Полный справочник API](docs/0.3.0/reference.ru.md)
 **Java:** [17](docs/0.3.0/java.ru.md#java-17) · [21](docs/0.3.0/java.ru.md#java-21) · [25](docs/0.3.0/java.ru.md#java-25) · [27](docs/0.3.0/java.ru.md#java-27)
 
 Типизированные пайплайны Reactor для обогащения и преобразования записей. У каждого
