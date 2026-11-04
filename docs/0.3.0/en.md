@@ -12,6 +12,7 @@ Typed Reactor pipelines with local retry boundaries, bounded record concurrency,
 
 | Capability | Use case | Example |
 | --- | --- | --- |
+| Business scenario: product enrichment | Validation → HTTP catalogue → output model, one temporary failure | [Runnable program](#practical-scenario-enrich-product-records) |
 | 1. Install the modules you need | Build from the local 0.3.0 source checkout. The core and Jolt run on Java 17; newer capabilities are optional modules. | [Code and result](#1-install-the-modules-you-need) |
 | 2. Compose typed and conditional steps | Pipeline<I,O> records input and output types in Java. map changes the output type; thenIf runs a same-type step only when its predicate matches. | [Code and result](#2-compose-typed-and-conditional-steps) |
 | 3. Retry only the failing step | The policy wraps one step, so an enrichment retry does not rerun prior validation or preparation. The retry count excludes the first attempt. | [Code and result](#3-retry-only-the-failing-step) |
@@ -22,6 +23,30 @@ Typed Reactor pipelines with local retry boundaries, bounded record concurrency,
 | 8. Transform JSON trees with Jolt | The optional Jolt adapter copies the specification and input tree, then creates a separate transform instance for each attempt. | [Code and result](#8-transform-json-trees-with-jolt) |
 | 9. Observe executions and record JFR on Java 27 | Observers receive lifecycle events with a stable execution ID across the steps and retries of one run. Reactor context carries application metadata. | [Code and result](#9-observe-executions-and-record-jfr-on-java-27) |
 | 10. Inspect failures and fix configuration problems | StepFailure names the failed stage, reports the number of attempts and preserves the original cause. Empty output is a failure, not an unnoticed record drop. | [Code and result](#10-inspect-failures-and-fix-configuration-problems) |
+
+## Practical scenario: enrich product records
+
+Validate each product, fetch its category by HTTP and build a display model.
+A temporary catalogue 503 is retried; validation must execute once per input.
+[ProductEnrichmentExample.java](examples/ProductEnrichmentExample.java) is a complete
+Java 17 program with adjacent EN/RU comments, a loopback catalogue and assertions.
+
+```sh
+./gradlew :core:publishToMavenLocal
+./gradlew -p docs/0.3.0/examples run -Pexample=ProductEnrichmentExample
+```
+
+Expected: two enriched products, validationRuns=2, httpRequests=3 and
+product1Attempts=2. The example uses a safe read operation; a retry of a write
+requires an application idempotency contract. String response bodies are buffered.
+
+For Spring Boot 4.1.2 applications, the companion
+[reactive-pipeline-spring-boot-starter](https://github.com/59Alex/reactive-pipeline-spring-boot-starter)
+provides injectable PipelineFactory, configuration properties and replaceable
+policy/observer beans while retaining these same typed steps. Its source is in a
+sibling local checkout; the remote repository and registry release are not yet
+available. The starter's README contains the equivalent business bean and runnable
+consumer. Java 25/27 optional adapters are not pulled into the starter.
 
 ## 1. Install the modules you need
 
@@ -400,6 +425,8 @@ Example.java: failure(). Expected: failure=lookup; cause=NoSuchElementException.
 > There is no durable execution log, restart recovery, distributed transaction or exactly-once side-effect guarantee. Use an external durable source/checkpoint layer when records must survive process crashes, and make retried effects idempotent.
 
 ## Downloadable examples
+
+- [ProductEnrichmentExample.java](examples/ProductEnrichmentExample.java): complete business flow.
 
 [Run examples and return to this guide](examples/README.md#english).
 

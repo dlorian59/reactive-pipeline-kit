@@ -14,10 +14,12 @@ Run from the library repository root, with JDK 17+:
 ./gradlew build publishToMavenLocal
 ./gradlew -p docs/0.3.0/examples run
 ./gradlew -p docs/0.3.0/examples run -Pexample=JoltExample
+./gradlew -p docs/0.3.0/examples run -Pexample=ProductEnrichmentExample
 ```
 
 | Source | Minimum JVM | Assertion and output |
 | --- | --- | --- |
+| [ProductEnrichmentExample.java](ProductEnrichmentExample.java) | 17 | Two product views, validationRuns=2; httpRequests=3; product1Attempts=2 |
 | [Example.java](Example.java) | 17 | Eight scenarios: typed=4, retry=10 with previous=1 and attempts=3, timeout=slow, ordered=[1, 2, 3], http=503, blocking=team:java, STARTED/SUCCEEDED events, named empty-result failure |
 | [JoltExample.java](JoltExample.java) | 17 | jolt={record={key=7}}; inputUnchanged=true |
 | [ScopedExample.java](ScopedExample.java) | 25 | scoped=team:java; outsideBound=false; operation runs on a virtual thread |
@@ -63,10 +65,12 @@ JAR и их транзитивные зависимости, без компил
 ./gradlew build publishToMavenLocal
 ./gradlew -p docs/0.3.0/examples run
 ./gradlew -p docs/0.3.0/examples run -Pexample=JoltExample
+./gradlew -p docs/0.3.0/examples run -Pexample=ProductEnrichmentExample
 ```
 
 | Исходник | Минимальная JVM | Проверка и результат |
 | --- | --- | --- |
+| [ProductEnrichmentExample.java](ProductEnrichmentExample.java) | 17 | Две модели товара, validationRuns=2; httpRequests=3; product1Attempts=2 |
 | [Example.java](Example.java) | 17 | Восемь сценариев: typed=4, retry=10 при previous=1 и attempts=3, timeout=slow, ordered=[1, 2, 3], http=503, blocking=team:java, события STARTED/SUCCEEDED, ошибка пустого результата с именем шага |
 | [JoltExample.java](JoltExample.java) | 17 | jolt={record={key=7}}; inputUnchanged=true |
 | [ScopedExample.java](ScopedExample.java) | 25 | scoped=team:java; outsideBound=false; операция работает на виртуальном потоке |

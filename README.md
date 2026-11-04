@@ -24,6 +24,10 @@ validation. No Spring container, scripts, or runtime configuration interpreter.
 
 ## Try it
 
+[Practical product enrichment: validation → HTTP → display model](docs/0.3.0/en.md#practical-scenario-enrich-product-records).
+The guide also links the optional Spring Boot starter, whose local companion
+checkout supplies defaults without changing the core pipeline API.
+
 From this checkout with JDK 17+:
 
 ```sh
@@ -88,6 +92,10 @@ There is no durable execution log, restart recovery, or distributed transaction.
 | Необязательные адаптеры Jolt, ScopedValue и JFR | [Jolt](docs/0.3.0/ru.md#8-преобразуйте-json-деревья-через-jolt), [контекст](docs/0.3.0/ru.md#7-необязательный-контекст-scopedvalue-на-java-25), [диагностика](docs/0.3.0/ru.md#9-наблюдайте-выполнение-и-записывайте-jfr-на-java-27) |
 
 ## Попробовать
+
+[Практический сценарий: валидация → HTTP → модель товара](docs/0.3.0/ru.md#практический-сценарий-обогащение-товаров).
+В руководстве есть ссылка на необязательный Spring Boot starter: соседний локальный
+проект задаёт настройки без изменения API ядра.
 
 В корне этого репозитория с JDK 17+:
 

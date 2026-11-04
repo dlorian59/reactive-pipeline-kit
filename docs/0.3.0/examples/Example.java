@@ -23,6 +23,8 @@ import reactor.util.context.Context;
 
 public final class Example {
     public static void main(String[] args) throws Exception {
+        // Each scenario asserts its result; an unexpected contract exits unsuccessfully.
+        // Каждый сценарий проверяет результат; нарушение контракта завершает программу с ошибкой.
         typed();
         retry();
         timeout();
@@ -45,6 +47,8 @@ public final class Example {
     }
 
     static void retry() throws Exception {
+        // Count earlier work separately to prove that only enrichment is retried.
+        // Считаем предыдущую работу отдельно, чтобы доказать повтор только обогащения.
         AtomicInteger previousStep = new AtomicInteger();
         AtomicInteger attempts = new AtomicInteger();
         StepPolicy policy = new StepPolicy(Duration.ofSeconds(2), 2,
@@ -72,6 +76,8 @@ public final class Example {
     }
 
     static void ordering() throws Exception {
+        // INPUT fixes output order, while COMPLETION only guarantees the same set of results.
+        // INPUT фиксирует порядок выдачи, COMPLETION гарантирует только тот же набор результатов.
         var delayed = Pipeline.<Integer>start().then("delay",
             (value, context) -> Mono.delay(Duration.ofMillis((4 - value) * 20L)).thenReturn(value));
         List<Integer> ordered = delayed.process(Flux.just(1, 2, 3), 3, Ordering.INPUT)
@@ -84,6 +90,8 @@ public final class Example {
     }
 
     static void http() throws Exception {
+        // A loopback endpoint returns 503 as data; the adapter does not classify statuses for you.
+        // Локальный сервер возвращает 503 как данные; адаптер не классифицирует статусы за приложение.
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/value", exchange -> {
             byte[] body = "try later".getBytes(StandardCharsets.UTF_8);
@@ -105,6 +113,8 @@ public final class Example {
     }
 
     static void blocking() throws Exception {
+        // The application owns the executor and closes it after processing.
+        // Приложение владеет executor и закрывает его после обработки.
         var executor = Executors.newFixedThreadPool(2);
         try {
             var lookup = Pipeline.<String>start().then("blocking", BlockingSteps.call(executor,
@@ -122,6 +132,8 @@ public final class Example {
     }
 
     static void diagnostics() throws Exception {
+        // Subscriber context carries application metadata without thread-local state.
+        // Контекст подписчика передаёт данные приложения без thread-local состояния.
         var events = new ConcurrentLinkedQueue<StepEvent>();
         var lookup = Pipeline.<String>start()
             .then("tenant", (value, context) -> Mono.just(

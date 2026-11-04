@@ -5,6 +5,8 @@ import java.util.Map;
 
 public final class JoltExample {
     public static void main(String[] args) {
+        // Reshape a copied JSON tree and check that the caller's input stays unchanged.
+        // Преобразуем копию JSON-дерева и проверяем неизменность исходных данных.
         var reshape = JoltStep.fromSpec(List.of(
             Map.of("operation", "shift", "spec", Map.of("id", "record.key"))));
         var pipeline = Pipeline.<Object>start().then("reshape", reshape);
