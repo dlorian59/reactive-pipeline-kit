@@ -22,6 +22,52 @@ import reactor.util.context.Context;
 
 class PipelineTest {
     @Test
+    void namedRemotePolicyRetriesOnlySelectedStepAndOrdinaryMethodIsCold() {
+        var validations = new AtomicInteger();
+        var calls = new AtomicInteger();
+        var pipeline = Pipeline.<Integer>start()
+                .map("validate", value -> { validations.incrementAndGet(); return value; })
+                .then("read", value -> calls.incrementAndGet() < 3
+                        ? Mono.<Integer>error(new java.net.ConnectException("transient")) : Mono.just(value),
+                        StepPolicy.readOnlyRemoteCall());
+        assertEquals(0, calls.get());
+        StepVerifier.create(pipeline.run(7)).expectNext(7).verifyComplete();
+        assertEquals(1, validations.get());
+        assertEquals(3, calls.get());
+        var rejected = new AtomicInteger();
+        StepVerifier.create(Pipeline.<Integer>start().then("forbidden", value -> {
+            rejected.incrementAndGet();
+            return Mono.<Integer>error(new SecurityException("denied"));
+        }, StepPolicy.readOnlyRemoteCall()).run(7))
+                .expectErrorSatisfies(error -> assertEquals(1, ((StepFailure) error).attempts())).verify();
+        assertEquals(1, rejected.get());
+        // Other I/O failures may be permanent; the profile must not retry them blindly.
+        // Прочие ошибки I/O могут быть постоянными; профиль не повторяет их вслепую.
+        StepVerifier.create(Pipeline.<Integer>start().then("certificate", value ->
+                Mono.<Integer>error(new javax.net.ssl.SSLHandshakeException("invalid certificate")),
+                StepPolicy.readOnlyRemoteCall()).run(7))
+                .expectErrorSatisfies(error -> assertEquals(1, ((StepFailure) error).attempts())).verify();
+    }
+
+    @Test
+    void attachedProcessingSurvivesCompositionAndObserverWithIsolatedDefinitions() {
+        var gates = List.<Sinks.One<Integer>>of(Sinks.one(), Sinks.one(), Sinks.one());
+        var started = new AtomicInteger();
+        var base = Pipeline.<Integer>start().withProcessing(ProcessingOptions.sequential());
+        var pipeline = base.then("gate", value -> {
+                    started.incrementAndGet(); return gates.get(value).asMono();
+                }).thenIf("optional", value -> false, (value, context) -> Mono.just(value), StepPolicy.defaults())
+                .map("view", value -> value + 10).observe(event -> { });
+        StepVerifier.create(pipeline.process(Flux.range(0, 3)))
+                .then(() -> assertEquals(1, started.get()))
+                .then(() -> gates.get(0).tryEmitValue(0)).expectNext(10)
+                .then(() -> assertEquals(2, started.get()))
+                .then(() -> gates.get(1).tryEmitValue(1)).expectNext(11)
+                .then(() -> gates.get(2).tryEmitValue(2)).expectNext(12).verifyComplete();
+        StepVerifier.create(base.process(Flux.just(5))).expectNext(5).verifyComplete();
+    }
+
+    @Test
     void typedCompositionAndDefinitionsRemainIndependent() {
         Pipeline<String, String> start = Pipeline.start();
         Pipeline<String, Integer> length = start.map("trim", String::trim).map("length", String::length);

@@ -39,6 +39,31 @@ public record StepPolicy(Duration timeout, int maxRetries, Duration retryDelay,
     }
 
     /**
+     * Bounded profile for read-only remote calls: three seconds per attempt,
+     * two additional attempts and 100 milliseconds between attempts. Only direct
+     * connection and timeout errors qualify (ConnectException, SocketTimeoutException,
+     * HttpTimeoutException, TimeoutException). HTTP statuses are not
+     * classified, and wrapped transport exceptions require the predicate overload.
+     * Never apply automatically to writes or other non-idempotent operations.
+     * @return immutable read-only call policy
+     */
+    public static StepPolicy readOnlyRemoteCall() {
+        return readOnlyRemoteCall(error -> error instanceof java.net.ConnectException
+                || error instanceof java.net.SocketTimeoutException
+                || error instanceof java.net.http.HttpTimeoutException
+                || error instanceof java.util.concurrent.TimeoutException);
+    }
+
+    /**
+     * Uses the bounded read-only profile with application-owned error classification.
+     * @param transientFailure predicate for selected transient errors, not auth or validation failures
+     * @return policy with three-second attempts and two delayed retries
+     */
+    public static StepPolicy readOnlyRemoteCall(Predicate<Throwable> transientFailure) {
+        return new StepPolicy(Duration.ofSeconds(3), 2, Duration.ofMillis(100), transientFailure);
+    }
+
+    /**
      * Creates a policy with retries disabled.
      * @param timeout attempt timeout
      * @return immutable policy

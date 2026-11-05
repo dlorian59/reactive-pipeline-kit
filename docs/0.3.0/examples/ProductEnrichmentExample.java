@@ -1,6 +1,6 @@
 import com.sun.net.httpserver.HttpServer;
 import io.github.alex59.pipeline.HttpSteps;
-import io.github.alex59.pipeline.Ordering;
+import io.github.alex59.pipeline.ProcessingOptions;
 import io.github.alex59.pipeline.Pipeline;
 import io.github.alex59.pipeline.StepPolicy;
 import java.io.IOException;
@@ -41,11 +41,12 @@ public final class ProductEnrichmentExample {
             var endpoint = URI.create("http://127.0.0.1:" + server.getAddress().getPort());
             var http = HttpSteps.jdk(HttpClient.newHttpClient(), HttpResponse.BodyHandlers.ofString());
             var validations = new AtomicInteger();
-            var policy = new StepPolicy(Duration.ofSeconds(2), 1, Duration.ofMillis(10), IOException.class::isInstance);
+            var policy = StepPolicy.readOnlyRemoteCall(IOException.class::isInstance);
 
             // Validation and output mapping are business code; only HTTP receives the retry policy.
             // Валидация и выходная модель — бизнес-код; политика повторов применяется только к HTTP.
             var pipeline = Pipeline.<Product>start()
+                    .withProcessing(ProcessingOptions.ordered(2))
                     .map("validate", product -> {
                         validations.incrementAndGet();
                         if (product.id() < 1 || product.sku() == null || product.sku().isBlank()) {
@@ -68,8 +69,7 @@ public final class ProductEnrichmentExample {
 
             // Blocking belongs only to this CLI boundary; reactive callers return the Flux.
             // Блокировка допустима только на этой границе CLI; реактивный обработчик возвращает Flux.
-            var result = pipeline.process(Flux.just(new Product(1, "BK-1"), new Product(2, "GM-2")),
-                    2, Ordering.INPUT).collectList().block(Duration.ofSeconds(10));
+            var result = pipeline.process(Flux.just(new Product(1, "BK-1"), new Product(2, "GM-2"))).collectList().block(Duration.ofSeconds(10));
             var expected = List.of(new ProductView(1, "BK-1 / books"), new ProductView(2, "GM-2 / games"));
             if (!expected.equals(result) || validations.get() != 2
                     || calls.get(1).get() != 2 || calls.get(2).get() != 1) {

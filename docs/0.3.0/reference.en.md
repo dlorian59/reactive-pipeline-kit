@@ -17,6 +17,8 @@ Java 21 executors and optional Java 25/27 modules separately.
 | --- | --- | --- |
 | Pipeline.start<T>() | Identity definition; immutable, reusable, no subscription | [Example.java: typed](examples/Example.java) |
 | then(name, Step), then(name, Step, StepPolicy) | Append a typed asynchronous stage, using defaults or an explicit policy; returns a new definition | [ProductEnrichmentExample.java](examples/ProductEnrichmentExample.java) |
+| then(name, Function<T,Mono<R>>[, policy]) | Ordinary reactive method/lambda, without ExecutionContext; same lazy step and retry boundary | [ProductService](examples/ProductService.java) |
+| withProcessing(ProcessingOptions), process(Publisher) | Attach immutable defaults; process uses them; default four active records in input order | [ProductService](examples/ProductService.java) |
 | map(name, Function) | Synchronous nonblocking transformation with the default policy; must return a value | [Example.java: typed](examples/Example.java) |
 | thenIf(name, Predicate, Step, StepPolicy) | Same-output-type transformation; false passes input through; predicate runs once, outside retry | [Example.java: typed](examples/Example.java) |
 | observe(StepObserver) | Returns a definition using the replacement observer for all stages; does not mutate previous definitions | [Example.java: diagnostics](examples/Example.java) |
@@ -51,6 +53,9 @@ For the full validation → HTTP → view scenario, run
 | --- | --- | --- |
 | StepPolicy(timeout, maxRetries, retryDelay, retryOn) and accessors | Positive per-attempt timeout, nonnegative additional retry count and fixed delay, non-null predicate | [Source](../../core/src/main/java/io/github/alex59/pipeline/StepPolicy.java), [Example.java: retry/timeout](examples/Example.java) |
 | StepPolicy.defaults(), once(Duration) | Defaults: 30 seconds, no retries; once chooses a timeout and disables retries | [Source](../../core/src/main/java/io/github/alex59/pipeline/StepPolicy.java), [Example.java: timeout](examples/Example.java) |
+| StepPolicy.readOnlyRemoteCall(), readOnlyRemoteCall(Predicate) | Three-second attempts, two retries, 100ms delay; selected connection/timeout errors or explicit classifier; selected safe reads only | [Source](../../core/src/main/java/io/github/alex59/pipeline/StepPolicy.java) |
+| ProcessingOptions(concurrency, ordering), concurrency(), ordering() | Immutable positive record budget and non-null output order | [Source](../../core/src/main/java/io/github/alex59/pipeline/ProcessingOptions.java) |
+| ProcessingOptions.ordered(), ordered(n), sequential(), completionOrder(n) | Four input-ordered records by default; explicit n; one record including invocation order; or completion-ordered n | [ProductService](examples/ProductService.java) |
 | StepFailure.step(), attempts(), getCause() | Stable stage name, attempts actually started, last original cause; constructed by the pipeline | [Source](../../core/src/main/java/io/github/alex59/pipeline/StepFailure.java), [Example.java: failure](examples/Example.java) |
 | Ordering.INPUT | Preserve emission order; completed later records can wait behind an earlier record | [Source](../../core/src/main/java/io/github/alex59/pipeline/Ordering.java), [Example.java: ordering](examples/Example.java) |
 | Ordering.COMPLETION | Emit as records finish; result order depends on timing | [Source](../../core/src/main/java/io/github/alex59/pipeline/Ordering.java), [Example.java: ordering](examples/Example.java) |

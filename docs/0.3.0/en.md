@@ -10,93 +10,115 @@
 
 Typed Reactor pipelines with local retry boundaries, bounded record concurrency, and optional JSON and JVM diagnostics adapters.
 
-## Capabilities at a glance
+## Before the API: one business request
 
-| Capability | Use case | Example |
-| --- | --- | --- |
-| Business scenario: product enrichment | Validation → HTTP catalogue → output model, one temporary failure | [Runnable program](#practical-scenario-enrich-product-records) |
-| 1. Install the modules you need | Build from the local 0.3.0 source checkout. The core and Jolt run on Java 17; newer capabilities are optional modules. | [Code and result](#1-install-the-modules-you-need) |
-| 2. Compose typed and conditional steps | Pipeline<I,O> records input and output types in Java. map changes the output type; thenIf runs a same-type step only when its predicate matches. | [Code and result](#2-compose-typed-and-conditional-steps) |
-| 3. Retry only the failing step | The policy wraps one step, so an enrichment retry does not rerun prior validation or preparation. The retry count excludes the first attempt. | [Code and result](#3-retry-only-the-failing-step) |
-| 4. Limit concurrency and choose output order | process subscribes to at most the configured number of records at once. Choose input order or completion order explicitly. | [Code and result](#4-limit-concurrency-and-choose-output-order) |
-| 5. Connect HTTP and propagate cancellation | HttpSteps.jdk adapts an application-owned HttpClient. The example starts a loopback server, so no external service is required. | [Code and result](#5-connect-http-and-propagate-cancellation) |
-| 6. Isolate blocking I/O; use virtual threads when available | BlockingSteps.call submits a fresh task for each attempt and passes ExecutionContext explicitly. The application owns the executor. | [Code and result](#6-isolate-blocking-io-use-virtual-threads-when-available) |
-| 7. Optional Java 25 scoped context | Use the java25 module when nested synchronous calls need execution metadata without passing a parameter through every method. It delegates task submission and cancellation to the core. | [Code and result](#7-optional-java-25-scoped-context) |
-| 8. Transform JSON trees with Jolt | The optional Jolt adapter copies the specification and input tree, then creates a separate transform instance for each attempt. | [Code and result](#8-transform-json-trees-with-jolt) |
-| 9. Observe executions and record JFR on Java 27 | Observers receive lifecycle events with a stable execution ID across the steps and retries of one run. Reactor context carries application metadata. | [Code and result](#9-observe-executions-and-record-jfr-on-java-27) |
-| 10. Inspect failures and fix configuration problems | StepFailure names the failed stage, reports the number of attempts and preserves the original cause. Empty output is a failure, not an unnoticed record drop. | [Code and result](#10-inspect-failures-and-fix-configuration-problems) |
+A product-import service needs to validate each record, read its category and
+return an enriched view. A temporary read failure should retry that read, not the
+whole import. A slow first product should not create an unbounded queue of later
+requests. These two boundaries—one attempt policy per step and one record budget
+per subscription—are what this library adds to Reactor.
 
-## Practical scenario: enrich product records
-
-Validate each product, fetch its category by HTTP and build a display model.
-A temporary catalogue 503 is retried; validation must execute once per input.
-[ProductEnrichmentExample.java](examples/ProductEnrichmentExample.java) is a complete
-Java 17 program with adjacent EN/RU comments, a loopback catalogue and assertions.
-
-```sh
-./gradlew :core:publishToMavenLocal
-./gradlew -p docs/0.3.0/examples run -Pexample=ProductEnrichmentExample
-```
-
-Expected: two enriched products, validationRuns=2, httpRequests=3 and
-product1Attempts=2. The example uses a safe read operation; a retry of a write
-requires an application idempotency contract. String response bodies are buffered.
-
-For Spring Boot 4.1.2 applications, the companion
-[reactive-pipeline-spring-boot-starter](https://github.com/dlorian59/reactive-pipeline-spring-boot-starter)
-provides injectable PipelineFactory, configuration properties and replaceable
-policy/observer beans while retaining these same typed steps. Its source is in a
-sibling local checkout; the remote repository and registry release are not yet
-available. The starter's README contains the equivalent business bean and runnable
-consumer. Java 25/27 optional adapters are not pulled into the starter.
+Read this guide in application order: dependencies and modules, a complete service,
+then composition, error classification, record limits, I/O and diagnostics. The
+later optional modules are not prerequisites for the first example. No Spring
+container or library-specific application framework is needed.
 
 ## 1. Install the modules you need
 
-Build from the local 0.3.0 source checkout. The core and Jolt run on Java 17; newer capabilities are optional modules.
+Core and Jolt require Java 17. Core is enough for the service below; Java 25 scoped
+context and Java 27 diagnostics are separate optional dependencies. In your
+existing application's pom.xml add:
 
-```bash
-./gradlew build publishToMavenLocal
+```xml
+<dependency>
+  <groupId>io.github.59alex</groupId>
+  <artifactId>reactive-pipeline-kit</artifactId>
+  <version>0.3.0</version>
+</dependency>
 ```
 
-Run in the reactive-pipeline-kit repository root with JDK 17+. Artifacts go to your local Maven repository.
-
-Run the included independent consumer directly:
-
-```bash
-./gradlew -p docs/0.3.0/examples run
-```
-
-[Example runner, source files, optional modules and expected output](examples/README.md#english).
-It resolves local JARs rather than compiling sibling library sources. To create your own consumer instead, use:
+Gradle Kotlin DSL:
 
 ```kotlin
-plugins { application }
-repositories {
-    mavenLocal()
-    mavenCentral()
-}
 dependencies {
     implementation("io.github.59alex:reactive-pipeline-kit:0.3.0")
 }
-application { mainClass.set("Example") }
 ```
 
-Consumer build.gradle.kts in a separate Gradle project with a wrapper. Place only Example.java in src/main/java. These coordinates describe local publication, not a claimed Maven Central release.
+The coordinates must exist in your configured repository. A Central release is
+not currently claimed. [Contributor instructions](../../CONTRIBUTING.md) explain
+local artifact verification without making source builds an application prerequisite.
 
-```bash
-./gradlew run
+| Module artifact (group io.github.59alex, version 0.3.0) | Minimum Java | Use when |
+| --- | --- | --- |
+| reactive-pipeline-kit | 17 | Typed Mono steps, record processing, HTTP and blocking adapters |
+| reactive-pipeline-kit-jolt | 17 | Transform bounded JSON trees, with per-attempt mutable state isolation |
+| reactive-pipeline-kit-java25 | 25 | Nested blocking calls need ScopedValue execution metadata |
+| reactive-pipeline-kit-java27 | 27 | Record pipeline step diagnostics in an application-owned JFR recording |
+
+## Practical scenario: enrich product records
+
+The full [ProductService.java](examples/ProductService.java) is a service with a
+small executable check. Supply your existing method catalog::readCategory; it
+returns a cold Mono<String>. The application decides which remote errors are
+transient; its transport is not inferred from the method name.
+
+```java
+import io.github.alex59.pipeline.Pipeline;
+import io.github.alex59.pipeline.ProcessingOptions;
+import io.github.alex59.pipeline.StepPolicy;
+import java.util.function.Function;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+public final class ProductService {
+    public record Product(long id, String sku) { }
+    public record ProductView(long id, String sku, String category) { }
+    private final Pipeline<Product, ProductView> pipeline;
+
+    public ProductService(Function<Long, Mono<String>> readCategory) {
+        // The caller supplies an ordinary reactive method, e.g. catalog::readCategory.
+        // Приложение передаёт обычный реактивный метод, например catalog::readCategory.
+        pipeline = Pipeline.<Product>start().withProcessing(ProcessingOptions.ordered(4))
+                .map("validate", product -> {
+                    if (product.id() < 1 || product.sku() == null || product.sku().isBlank()) {
+                        throw new IllegalArgumentException("Positive id and SKU required");
+                    }
+                    return product;
+                })
+                .then("catalog", product -> readCategory.apply(product.id())
+                        .map(category -> new ProductView(product.id(), product.sku(), category)),
+                        StepPolicy.readOnlyRemoteCall());
+    }
+
+    public Flux<ProductView> enrich(Flux<Product> products) {
+        return pipeline.process(products);
+    }
+
+}
 ```
 
-Run in the consumer project, not the library checkout. Example.java verifies eight scenarios and prints their results. For another downloadable example, change mainClass and add its module; copy only the selected source file and use its required JDK.
+The method reference is adapted by the one-argument then overload. Validation
+runs once per record, then the category is mapped into the output. process uses
+options already attached to the definition, so each call site needs only its
+input publisher. Return this Flux from a reactive boundary; do not block or call
+subscribe inside a WebFlux handler.
 
-- core: Java 17+, Reactor 3.8.8; pipelines, HTTP, and explicit blocking adapters.
-- jolt: Java 17+, JSON-tree transformations; artifact reactive-pipeline-kit-jolt.
-- java25: Java 25+, ScopedValue; enable with -Pjava25. Virtual threads alone do not need this module.
-- java27: Java 27+, JFR diagnostics; enable with -Pjava27. The core still works on Java 17.
+Expected for categories books: ProductView(1, BK-1, books), then
+ProductView(2, BK-2, books). The in-memory check proves service wiring; the separate
+[ProductEnrichmentExample.java](examples/ProductEnrichmentExample.java) also starts
+a loopback HTTP catalogue, fails its first read with 503, then verifies two
+validation runs and three HTTP attempts. Its small string bodies are buffered.
 
-> **Example context**
->
-> Java blocks below are method bodies unless a class or command is shown. Example.java contains the imports, main method and check helper, and runs entirely against a loopback HTTP server. Optional JoltExample.java, ScopedExample.java and JfrExample.java are separate downloads. Calls to block belong at this synchronous demonstration boundary, not on a Reactor event loop.
+For an existing **Spring Boot 4.1.2 + WebFlux + Reactor Netty** app, follow the
+[full starter integration](https://github.com/dlorian59/reactive-pipeline-spring-boot-starter/blob/main/docs/0.1.0/en.md):
+Maven/Gradle WebFlux and WebClient dependencies, application.yml, ProductService,
+CatalogClient and ProductController with NDJSON input/output and errors. The
+starter supplies settings, not a second execution engine. No MVC behavior is implied.
+
+The following snippets focus on one capability at a time. Their complete imports
+and executable checks are in [Example.java](examples/Example.java); block is used
+only at that CLI boundary. Optional examples are separate Java 25/27 consumers.
 
 ## 2. Compose typed and conditional steps
 
@@ -118,6 +140,11 @@ Example.java: typed(). Expected output: typed=4.
 > **Cold, immutable definition**
 >
 > Adding a step returns a new definition. Each subscription to run starts a fresh execution; results are not cached. Each step must emit one non-null value. False conditions pass the original value through, and predicates run once per record.
+
+Ordinary reactive methods can use then("read", value -> client.read(value)) or
+then("read", client::read, policy). Keep the two-argument Step overload when you
+need ExecutionContext. Both overloads use the same lazy per-attempt engine;
+method invocation does not happen during definition construction.
 
 ## 3. Retry only the failing step
 
@@ -158,6 +185,13 @@ Example.java: timeout(). Expected: timeout=slow; attempts=1. The original cause 
 >
 > Timeout applies to each attempt; the delay between retries is extra. Defaults are 30 seconds and no retries. A retry reuses the input reference and may repeat a remote effect after an ambiguous failure. Keep input immutable and use idempotency when effects must not repeat. A timeout requests cancellation; it cannot forcibly stop blocking Java code.
 
+For a selected read-only call, StepPolicy.readOnlyRemoteCall() gives a three-second
+attempt timeout, two additional attempts and 100ms delay. Only direct ConnectException, SocketTimeoutException, HttpTimeoutException and
+TimeoutException qualify. readOnlyRemoteCall(predicate) lets your adapter
+classify selected status/transport errors; it is not a blanket retry switch. It
+must not be applied automatically to writes. once(Duration) is the explicit
+no-retry profile. A wrapped error will not qualify unless your predicate says so.
+
 ## 4. Limit concurrency and choose output order
 
 process subscribes to at most the configured number of records at once. Choose input order or completion order explicitly.
@@ -179,6 +213,24 @@ Example.java: ordering(). INPUT emits [1, 2, 3]. COMPLETION contains the same va
 - INPUT can hold later completed records behind a slow earlier record; it does not order external side effects.
 - The first error fails the stream and cancels other active records. Results already emitted stay emitted.
 - The limit counts records, not bytes or threads. Large payloads and noncooperative cancelled I/O can still consume resources.
+
+Attach a workload profile once when constructing the service:
+
+```java
+var pipeline = Pipeline.<Integer>start()
+    .withProcessing(ProcessingOptions.ordered(4))
+    .then("read", value -> Mono.just(value + 1));
+Flux<Integer> results = pipeline.process(Flux.just(1, 2, 3));
+```
+
+Imports add io.github.alex59.pipeline.ProcessingOptions. ordered() chooses four
+active records; ordered(n) preserves input output order with an explicit budget.
+sequential() permits one active record, including invocation order.
+completionOrder(n) permits n active records and emits results as they finish.
+All profiles use prefetch 1, fail fast, propagate cancellation and create a new
+budget per subscription. They are not a global semaphore or a byte limit.
+The explicit process(source, concurrency, ordering) overload still overrides
+attached settings for that call. Composition and observe preserve attached options.
 
 ## 5. Connect HTTP and propagate cancellation
 
@@ -440,3 +492,20 @@ Example.java: failure(). Expected: failure=lookup; cause=NoSuchElementException.
 [MIT](../../LICENSE)
 
 [← Back to documentation and versions / Назад к документации и версиям](../index.md)
+
+<a id="source-walkthrough"></a>
+## Follow one execution through the source
+
+Start at [ProductService](examples/ProductService.java): constructor defines the
+flow, enrich supplies the input. [Pipeline](../../core/src/main/java/io/github/alex59/pipeline/Pipeline.java)
+keeps immutable steps/options; run creates an execution on subscription; execute
+wraps only one step in timeout/retry; process uses bounded Reactor flattening.
+[StepPolicy](../../core/src/main/java/io/github/alex59/pipeline/StepPolicy.java)
+selects attempt behavior and [ProcessingOptions](../../core/src/main/java/io/github/alex59/pipeline/ProcessingOptions.java)
+selects record behavior. The HTTP, blocking and Jolt adapters implement Step;
+they do not introduce another scheduler or orchestration layer.
+
+Keep application decisions at the edges: credentials and endpoints in the client,
+validation in the service, admission control and partial-response handling in
+the transport boundary. [Contributing](../../CONTRIBUTING.md) explains source and
+packaged-artifact checks. [Versions](../index.md) · [README](../../README.md).

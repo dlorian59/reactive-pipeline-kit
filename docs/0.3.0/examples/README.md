@@ -103,3 +103,13 @@ JFR записывает синтетические данные; этот пр�
 указав новый каталог. Библиотека должна быть уже собрана в Maven Local.
 
 [← Назад к русскому руководству](../ru.md) · [README библиотеки](../../../README.md)
+
+## Service-first entry / Начало с сервиса
+
+[ProductService.java](ProductService.java) demonstrates ordinary one-argument reactive
+methods and an attached ordered workload profile. Select `-Pexample=ProductService`
+in the contributor runner. It asserts two ordered enriched views.
+
+[ProductService.java](ProductService.java) показывает обычные реактивные методы с
+одним аргументом и закреплённый профиль порядка/лимита. В contributor-команде
+выберите `-Pexample=ProductService`: проверяются две модели во входном порядке.

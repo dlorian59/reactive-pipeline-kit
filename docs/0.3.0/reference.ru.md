@@ -17,6 +17,8 @@ executor Java 21 и дополнительные модули Java 25/27.
 | --- | --- | --- |
 | Pipeline.start<T>() | Неизменяемое определение с тождественным преобразованием; подписки нет | [Example.java: typed](examples/Example.java) |
 | then(name, Step), then(name, Step, StepPolicy) | Новый асинхронный типизированный шаг с обычной или явной политикой; возвращает новое определение | [ProductEnrichmentExample.java](examples/ProductEnrichmentExample.java) |
+| then(name, Function<T,Mono<R>>[, policy]) | Обычный реактивный метод/lambda без ExecutionContext; прежняя ленивая граница шага/повторов | [ProductService](examples/ProductService.java) |
+| withProcessing(ProcessingOptions), process(Publisher) | Неизменяемые настройки определения; process применяет их; по умолчанию четыре записи во входном порядке | [ProductService](examples/ProductService.java) |
 | map(name, Function) | Синхронное неблокирующее преобразование со стандартной политикой; нужен результат | [Example.java: typed](examples/Example.java) |
 | thenIf(name, Predicate, Step, StepPolicy) | Преобразование с сохранением типа; false пропускает вход; условие вычисляется один раз вне повторов | [Example.java: typed](examples/Example.java) |
 | observe(StepObserver) | Новое определение с заменой наблюдателя для всех шагов; прежнее определение не меняется | [Example.java: diagnostics](examples/Example.java) |
@@ -52,6 +54,9 @@ reactor.core.publisher.Flux. Это тело метода синхронного
 | --- | --- | --- |
 | StepPolicy(timeout, maxRetries, retryDelay, retryOn) и accessors | Положительный таймаут попытки, неотрицательные число дополнительных попыток и фиксированная задержка, ненулевой predicate | [Исходник](../../core/src/main/java/io/github/alex59/pipeline/StepPolicy.java), [Example.java: retry/timeout](examples/Example.java) |
 | StepPolicy.defaults(), once(Duration) | Defaults: 30 секунд без повторов; once задаёт таймаут без повторов | [Исходник](../../core/src/main/java/io/github/alex59/pipeline/StepPolicy.java), [Example.java: timeout](examples/Example.java) |
+| StepPolicy.readOnlyRemoteCall(), readOnlyRemoteCall(Predicate) | Три секунды на попытку, два повтора, задержка 100ms; выбранные ошибки соединения/таймаута либо явный классификатор; только безопасное чтение | [Исходник](../../core/src/main/java/io/github/alex59/pipeline/StepPolicy.java) |
+| ProcessingOptions(concurrency, ordering), concurrency(), ordering() | Неизменяемый положительный бюджет записей и ненулевой порядок | [Исходник](../../core/src/main/java/io/github/alex59/pipeline/ProcessingOptions.java) |
+| ProcessingOptions.ordered(), ordered(n), sequential(), completionOrder(n) | По умолчанию четыре записи во входном порядке; явное n; одна запись с порядком вызовов; либо n записей по готовности | [ProductService](examples/ProductService.java) |
 | StepFailure.step(), attempts(), getCause() | Имя шага, число начатых попыток и последняя исходная причина; объект создаёт пайплайн | [Исходник](../../core/src/main/java/io/github/alex59/pipeline/StepFailure.java), [Example.java: failure](examples/Example.java) |
 | Ordering.INPUT | Выдача в порядке входа; готовые поздние записи могут ждать раннюю | [Исходник](../../core/src/main/java/io/github/alex59/pipeline/Ordering.java), [Example.java: ordering](examples/Example.java) |
 | Ordering.COMPLETION | Выдача по завершению; порядок зависит от времени выполнения | [Исходник](../../core/src/main/java/io/github/alex59/pipeline/Ordering.java), [Example.java: ordering](examples/Example.java) |

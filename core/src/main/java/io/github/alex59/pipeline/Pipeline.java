@@ -31,9 +31,11 @@ public final class Pipeline<I, O> {
     private final BiFunction<I, Execution, Mono<O>> flow;
     private final Set<String> names;
     private final StepObserver observer;
+    private final ProcessingOptions processing;
 
     private Pipeline(BiFunction<I, Execution, Mono<O>> flow, Set<String> names,
-                     StepObserver observer) {
+                     StepObserver observer, ProcessingOptions processing) {
+        this.processing = processing;
         this.flow = flow;
         this.names = names;
         this.observer = observer;
@@ -45,7 +47,7 @@ public final class Pipeline<I, O> {
      * @return empty pipeline
      */
     public static <T> Pipeline<T, T> start() {
-        return new Pipeline<>((value, execution) -> Mono.just(value), Set.of(), StepObserver.NONE);
+        return new Pipeline<>((value, execution) -> Mono.just(value), Set.of(), StepObserver.NONE, ProcessingOptions.ordered());
     }
 
     /**
@@ -54,7 +56,41 @@ public final class Pipeline<I, O> {
      * @return new definition
      */
     public Pipeline<I, O> observe(StepObserver observer) {
-        return new Pipeline<>(flow, names, Objects.requireNonNull(observer, "observer"));
+        return new Pipeline<>(flow, names, Objects.requireNonNull(observer, "observer"), processing);
+    }
+
+    /**
+     * Selects defaults used by {@link #process(Publisher)}. Each subscription owns
+     * its own budget; this does not limit the whole application or record bytes.
+     * @param options bounded processing options
+     * @return new definition with the same steps and observer
+     */
+    public Pipeline<I, O> withProcessing(ProcessingOptions options) {
+        return new Pipeline<>(flow, names, observer, Objects.requireNonNull(options, "options"));
+    }
+
+    /**
+     * Adds an ordinary reactive service method without a context parameter.
+     * @param name unique nonblank step name
+     * @param step cold, nonblocking service operation
+     * @param <N> new output type
+     * @return new definition with retries disabled for this step
+     */
+    public <N> Pipeline<I, N> then(String name, Function<? super O, Mono<N>> step) {
+        return then(name, step, StepPolicy.defaults());
+    }
+
+    /**
+     * Adds an ordinary reactive service method with an explicit attempt policy.
+     * @param name unique nonblank step name
+     * @param step cold, nonblocking service operation
+     * @param policy policy selected for this operation's retry safety
+     * @param <N> new output type
+     * @return new definition
+     */
+    public <N> Pipeline<I, N> then(String name, Function<? super O, Mono<N>> step, StepPolicy policy) {
+        Objects.requireNonNull(step, "step");
+        return then(name, (value, context) -> step.apply(value), policy);
     }
 
     /**
@@ -81,7 +117,7 @@ public final class Pipeline<I, O> {
         Objects.requireNonNull(step, "step");
         Objects.requireNonNull(policy, "policy");
         return new Pipeline<>((input, execution) -> flow.apply(input, execution)
-                .flatMap(value -> execute(name, step, policy, value, execution)), nextNames, observer);
+                .flatMap(value -> execute(name, step, policy, value, execution)), nextNames, observer, processing);
     }
 
     /**
@@ -125,7 +161,7 @@ public final class Pipeline<I, O> {
                 return Mono.just(value);
             }
             return execute(name, step, policy, value, execution);
-        }), nextNames, observer);
+        }), nextNames, observer, processing);
     }
 
     /**
@@ -138,6 +174,16 @@ public final class Pipeline<I, O> {
         Objects.requireNonNull(input, "input");
         return Mono.deferContextual(context -> flow.apply(input,
                 new Execution(new ExecutionContext(UUID.randomUUID(), context), observer)));
+    }
+
+    /**
+     * Processes using this definition's bounded options (four active records and
+     * input-ordered output by default). Input ordering does not order side effects.
+     * @param source input records
+     * @return cold processing stream; errors cancel other in-flight records
+     */
+    public Flux<O> process(Publisher<I> source) {
+        return process(source, processing.concurrency(), processing.ordering());
     }
 
     /**

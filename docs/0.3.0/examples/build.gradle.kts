@@ -2,10 +2,10 @@ plugins { application }
 
 val exampleName = providers.gradleProperty("example").getOrElse("Example")
 val minimumJava = when (exampleName) {
-    "Example", "JoltExample", "ProductEnrichmentExample" -> 17
+    "Example", "JoltExample", "ProductEnrichmentExample", "ProductService" -> 17
     "ScopedExample" -> 25
     "JfrExample" -> 27
-    else -> error("Unknown example: $exampleName. Choose Example, ProductEnrichmentExample, JoltExample, ScopedExample or JfrExample.")
+    else -> error("Unknown example: $exampleName. Choose Example, ProductService, ProductEnrichmentExample, JoltExample, ScopedExample or JfrExample.")
 }
 val exampleJava = providers.gradleProperty("exampleJava").map(String::toInt)
     .getOrElse(maxOf(minimumJava, JavaVersion.current().majorVersion.toInt()))
