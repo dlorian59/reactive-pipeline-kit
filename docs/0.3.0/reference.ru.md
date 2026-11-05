@@ -194,8 +194,8 @@ EVENT_NAME равен io.github.alex59.pipeline.Step: включите это с
 Отдельный [Spring starter](https://github.com/dlorian59/reactive-pipeline-spring-boot-starter)
 предоставляет PipelineFactory, свойства и подключаемую явно @ReactivePolicy для
 Mono/Flux-методов сервисов. Его README ведёт к справочнику версии и
-AnnotatedExampleApplication. Исходники доступны в соседнем локальном checkout;
-доступность удалённого репозитория и публикация не заявляются. Стартер включает
+AnnotatedExampleApplication. Клонируйте репозиторий стартера рядом с библиотекой и соберите артефакты
+локально; публикация в Maven Central выполняется отдельно. Стартер включает
 только core, без Jolt/Java 25/27. В отличие от шага core, AOP допускает пустые
 результаты, сохраняет тип ошибки и не создаёт метаданные выполнения/наблюдателя.
 

@@ -190,8 +190,8 @@ These documentation changes did not rerun the optional runtime matrix.
 The separate [Spring starter](https://github.com/dlorian59/reactive-pipeline-spring-boot-starter)
 provides PipelineFactory, configuration and opt-in @ReactivePolicy for service
 Mono/Flux methods. Read its versioned reference and AnnotatedExampleApplication
-through its README. The companion source is currently available in the sibling
-local checkout; remote availability/publication is not asserted. It pulls only
+through its README. Clone the companion repository alongside this library and build its artifacts
+locally; Maven Central publication is separate. It pulls only
 core, not Jolt/Java 25/27. Unlike a core step, its AOP boundary allows empty results,
 preserves original error types and does not create execution/observer metadata.
 
