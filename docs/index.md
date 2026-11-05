@@ -7,8 +7,8 @@ Choose a release and language. / Выберите версию библиоте�
 | Version / Версия | English | Русский | Java |
 | --- | --- | --- | --- |
 | **0.3.0** | [Usage guide](0.3.0/en.md) | [Руководство](0.3.0/ru.md) | [17 / 21 / 25 / 27 · EN](0.3.0/java.en.md), [RU](0.3.0/java.ru.md) |
-| 0.2.0 · archive / архив | [README at release](https://github.com/59Alex/reactive-pipeline-kit/blob/2360f12139cdf5da32346ab71293a46c46566fa8/README.md) | Архив исходного README доступен на английском | Minimum 27; superseded / заменён |
-| 0.1.0 · archive / архив | [README at release](https://github.com/59Alex/reactive-pipeline-kit/blob/79c928c20fde9d859068fdb0be8e8c2422a9962b/README.md) | Архив исходного README доступен на английском | Minimum 17 |
+| 0.2.0 · archive / архив | [README at release](https://github.com/dlorian59/reactive-pipeline-kit/blob/2360f12139cdf5da32346ab71293a46c46566fa8/README.md) | Архив исходного README доступен на английском | Minimum 27; superseded / заменён |
+| 0.1.0 · archive / архив | [README at release](https://github.com/dlorian59/reactive-pipeline-kit/blob/79c928c20fde9d859068fdb0be8e8c2422a9962b/README.md) | Архив исходного README доступен на английском | Minimum 17 |
 
 [Complete API reference](0.3.0/reference.en.md) · [Полный справочник API](0.3.0/reference.ru.md)
 

@@ -46,10 +46,10 @@ subprojects {
                 pom {
                     name.set("Reactive Pipeline ${project.name}")
                     description.set("Typed Reactor pipelines with bounded concurrency and per-step reliability policies")
-                    url.set("https://github.com/59Alex/reactive-pipeline-kit")
+                    url.set("https://github.com/dlorian59/reactive-pipeline-kit")
                     licenses { license { name.set("MIT License"); url.set("https://opensource.org/licenses/MIT") } }
-                    developers { developer { id.set("59Alex"); name.set("Aleksandr Kashevarov") } }
-                    scm { url.set("https://github.com/59Alex/reactive-pipeline-kit"); connection.set("scm:git:https://github.com/59Alex/reactive-pipeline-kit.git") }
+                    developers { developer { id.set("dlorian59"); name.set("Aleksandr Kashevarov") } }
+                    scm { url.set("https://github.com/dlorian59/reactive-pipeline-kit"); connection.set("scm:git:https://github.com/dlorian59/reactive-pipeline-kit.git") }
                 }
             }
         }

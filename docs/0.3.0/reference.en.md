@@ -187,7 +187,7 @@ These documentation changes did not rerun the optional runtime matrix.
 
 ## Spring integration and choosing a boundary
 
-The separate [Spring starter](https://github.com/59Alex/reactive-pipeline-spring-boot-starter)
+The separate [Spring starter](https://github.com/dlorian59/reactive-pipeline-spring-boot-starter)
 provides PipelineFactory, configuration and opt-in @ReactivePolicy for service
 Mono/Flux methods. Read its versioned reference and AnnotatedExampleApplication
 through its README. The companion source is currently available in the sibling

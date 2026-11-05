@@ -43,7 +43,7 @@ product1Attempts=2. The example uses a safe read operation; a retry of a write
 requires an application idempotency contract. String response bodies are buffered.
 
 For Spring Boot 4.1.2 applications, the companion
-[reactive-pipeline-spring-boot-starter](https://github.com/59Alex/reactive-pipeline-spring-boot-starter)
+[reactive-pipeline-spring-boot-starter](https://github.com/dlorian59/reactive-pipeline-spring-boot-starter)
 provides injectable PipelineFactory, configuration properties and replaceable
 policy/observer beans while retaining these same typed steps. Its source is in a
 sibling local checkout; the remote repository and registry release are not yet

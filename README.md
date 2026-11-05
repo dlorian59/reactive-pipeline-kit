@@ -1,6 +1,6 @@
 # reactive-pipeline-kit
 
-[![Build](https://github.com/59Alex/reactive-pipeline-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/59Alex/reactive-pipeline-kit/actions/workflows/ci.yml) [![Java 17+](https://img.shields.io/badge/Java-17%2B-437291)](docs/JAVA-SUPPORT.md) [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Build](https://github.com/dlorian59/reactive-pipeline-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/dlorian59/reactive-pipeline-kit/actions/workflows/ci.yml) [![Java 17+](https://img.shields.io/badge/Java-17%2B-437291)](docs/JAVA-SUPPORT.md) [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <details name="readme-language">
 <summary><picture><source media="(prefers-color-scheme: dark)" srcset="assets/lang-en-dark.svg"><img src="assets/lang-en-light.svg" width="42" height="26" alt="EN"></picture></summary>

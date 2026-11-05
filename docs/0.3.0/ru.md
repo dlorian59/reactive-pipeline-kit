@@ -43,7 +43,7 @@ product1Attempts=2. Пример использует чтение; повтор
 контракта идемпотентности. Строковое тело ответа полностью буферизуется.
 
 Для приложений Spring Boot 4.1.2 отдельный
-[reactive-pipeline-spring-boot-starter](https://github.com/59Alex/reactive-pipeline-spring-boot-starter)
+[reactive-pipeline-spring-boot-starter](https://github.com/dlorian59/reactive-pipeline-spring-boot-starter)
 предоставляет внедряемую PipelineFactory, свойства конфигурации и заменяемые beans
 политики и наблюдателя, сохраняя те же типизированные шаги. Его исходники находятся
 в соседнем локальном каталоге; удалённый репозиторий и релиз в реестре пока
